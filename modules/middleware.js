@@ -1,24 +1,34 @@
-class Middleware {
+function Middleware (stateHolderInstance, distributorInstance) {
 
-    constructor () {}
+    this.stateHolder = stateHolderInstance;
+    this.distributor = distributorInstance;
 
-    appState (req, res) {
-        res.json({respond: 'with app state'});
-    }
+    this.appState = (req, res) => {
+        res.json(this.stateHolder.state);
+    };
 
-    startRecording (req, res) {
-        res.json({recording: true});
-    }
+    this.startRecording = (req, res) => {
+        this.stateHolder.recording = true;
+        res.json(this.stateHolder.state);
+    };
 
-    stopRecording (req, res) {
-        res.json({recording: false});
-    }
+    this.stopRecording = (req, res) => {
+        this.stateHolder.recording = false;
+        res.json(this.stateHolder.state);
+    };
 
-    liveStats (req, res) {
-        res.json({respond: 'with a single timeframe'});
-    }
+    this.liveStats = (req, res) => {
+        let chunk = this.distributor.chunk;
+        let jsonResponse = {
+            timestamp: this.distributor.timestamp
+        };
+        for (let key in chunk) {
+            jsonResponse[key] = chunk[key];
+        }
+        res.json(jsonResponse);
+    };
 
-    statsSince (req, res) {
+    this.statsSince = (req, res) => {
         let timeframe = req.params.timeframe,
             parsedTimeframe, error;
         parsedTimeframe = parseInt(timeframe);
@@ -29,7 +39,7 @@ class Middleware {
         } else {
             res.json({respond: 'with all timeframes newer than '+parsedTimeframe});
         }
-    }
+    };
 }
 
 module.exports = Middleware;
