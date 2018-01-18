@@ -1,7 +1,8 @@
-class Switch {
+class Distributor {
 
-    constructor (stateHandlerInstance) {
+    constructor (stateHandlerInstance, storageControllerInstance) {
         this.stateHandler = stateHandlerInstance;
+        this.storage = storageControllerInstance;
     }
 
     distribute (chunk) {
@@ -13,11 +14,10 @@ class Switch {
             chunk: chunk
         };
         if (this.stateHandler.recording) {
-            // TODO: persist in Cache and DB
-            console.log(timeframe);
+            this.storage.insert(timestamp, chunk);
         }
     }
 
 }
 
-module.exports = Switch;
+module.exports = Distributor;

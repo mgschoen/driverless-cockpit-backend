@@ -7,12 +7,14 @@ const middleware = require('./modules/middleware.js');
 const stateHolder = require('./modules/state-holder.js');
 const vehicleConnector = require('./modules/vehicle-connector.js');
 const distributor = require('./modules/distributor.js');
+const StorageController = require('./modules/storage-controller.js');
 
 // Module instances
 const app = express();
 const state = new stateHolder();
-const dist = new distributor(state);
-const API = new middleware(state, dist);
+const storage = new StorageController();
+const dist = new distributor(state, storage);
+const API = new middleware(state, dist, storage);
 const vehicle = new vehicleConnector(state, dist);
 
 // Static server
