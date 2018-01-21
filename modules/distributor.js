@@ -1,11 +1,9 @@
-class Distributor {
+function Distributor (storageControllerInstance) {
 
-    constructor (stateHandlerInstance, storageControllerInstance) {
-        this.stateHandler = stateHandlerInstance;
-        this.storage = storageControllerInstance;
-    }
+    this.stateHandler = require('./state-holder');
+    this.storage = storageControllerInstance;
 
-    distribute (chunk) {
+    this.distribute = (chunk) => {
         let timestamp = new Date().getTime();
         this.timestamp = timestamp;
         this.chunk = chunk;
@@ -16,7 +14,7 @@ class Distributor {
         if (this.stateHandler.recording) {
             this.storage.insert(timestamp, chunk);
         }
-    }
+    };
 
 }
 

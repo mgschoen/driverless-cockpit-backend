@@ -1,17 +1,14 @@
-class StateHolder {
+function StateHolder () {
 
-    constructor () {
-        this.connected = false;
-        this.recording = false;
-    }
+    this.connected = false;
+    this.recording = false;
 
-    get state () {
+    this.getState = _ => {
         return {
             connected: this.connected,
             recording: this.recording
         };
-    }
-
+    };
 }
 
-module.exports = StateHolder;
+module.exports = new StateHolder();

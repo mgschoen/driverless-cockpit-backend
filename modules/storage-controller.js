@@ -1,34 +1,32 @@
 const MongoClient = require('mongodb').MongoClient;
 
-class StorageController {
+function StorageController () {
 
-    constructor () {
-        this.cache = require('memory-cache');
-        this.dbClient = null;
-        this.db = null;
-        this.timeframeCollection = null;
-        this.clipCollection = null;
-        this.initialised = false;
-        this.packageKeys = [];
-        this.timeoutSinceLastDump = null;
+    this.cache = require('memory-cache');
+    this.dbClient = null;
+    this.db = null;
+    this.timeframeCollection = null;
+    this.clipCollection = null;
+    this.initialised = false;
+    this.packageKeys = [];
+    this.timeoutSinceLastDump = null;
 
-        MongoClient.connect('mongodb://localhost:27017', (err, client) => {
+    MongoClient.connect('mongodb://localhost:27017', (err, client) => {
+        if (err) { console.error(err.message); process.exit(1); }
+        this.dbClient = client;
+        this.db = client.db('driverless');
+        this.db.createCollection('timeframes', (err, tfCollection) => {
             if (err) { console.error(err.message); process.exit(1); }
-            this.dbClient = client;
-            this.db = client.db('driverless');
-            this.db.createCollection('timeframes', (err, tfCollection) => {
+            this.timeframeCollection = tfCollection;
+            this.db.createCollection('recordings', (err, recCollection) => {
                 if (err) { console.error(err.message); process.exit(1); }
-                this.timeframeCollection = tfCollection;
-                this.db.createCollection('recordings', (err, recCollection) => {
-                    if (err) { console.error(err.message); process.exit(1); }
-                    this.clipCollection = recCollection;
-                    this.initialised = true;
-                })
-            });
-        })
-    }
+                this.clipCollection = recCollection;
+                this.initialised = true;
+            })
+        });
+    });
 
-    insert (timestamp, chunk) {
+    this.insert = (timestamp, chunk) => {
         this.cache.put(timestamp, chunk, 30000);
         this.packageKeys.push(timestamp);
         if (!this.timeoutSinceLastDump) {
@@ -37,9 +35,9 @@ class StorageController {
         if (this.packageKeys.length >= 30) {
             this.dumpKeys();
         }
-    }
+    };
 
-    dumpKeys (finalDump) {
+    this.dumpKeys = (finalDump) => {
         if (this.initialised) {
             clearTimeout(this.timeoutSinceLastDump);
             let insertData = [];

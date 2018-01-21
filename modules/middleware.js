@@ -1,6 +1,6 @@
-function Middleware (stateHolderInstance, distributorInstance, storageControllerInstance) {
+function Middleware (distributorInstance, storageControllerInstance) {
 
-    this.stateHolder = stateHolderInstance;
+    this.stateHolder = require('./state-holder');
     this.distributor = distributorInstance;
     this.storage = storageControllerInstance;
 
@@ -11,7 +11,7 @@ function Middleware (stateHolderInstance, distributorInstance, storageController
     this.startRecording = (req, res) => {
         if (!this.stateHolder.recording) {
             this.stateHolder.recording = true;
-            res.json(this.stateHolder.state);
+            res.json(this.stateHolder.getState());
         } else {
             res.statusCode = 500;
             res.send('Cannot start recording. Recording already active.');
@@ -22,7 +22,7 @@ function Middleware (stateHolderInstance, distributorInstance, storageController
         if (this.stateHolder.recording) {
             this.stateHolder.recording = false;
             this.storage.dumpKeys(true);
-            res.json(this.stateHolder.state);
+            res.json(this.stateHolder.getState());
         } else {
             res.statusCode = 500;
             res.send('Cannot stop recording. No recording active.');

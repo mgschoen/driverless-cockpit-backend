@@ -1,8 +1,8 @@
 const VehicleMock = require('./vehicle-mock.js');
 
-function VehicleConnector (stateHolderInstance, distributorInstance) {
+function VehicleConnector (distributorInstance) {
 
-    this.stateHolder = stateHolderInstance;
+    this.stateHolder = require('./state-holder');
     this.distributor = distributorInstance;
 
     this.broadcastChunk = () => {
