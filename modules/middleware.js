@@ -21,7 +21,7 @@ function Middleware (distributorInstance, storageControllerInstance) {
     this.stopRecording = (req, res) => {
         if (this.stateHolder.recording) {
             this.stateHolder.recording = false;
-            this.storage.dumpKeys(true);
+            this.storage.dumpUnpersistedFrames(true);
             res.json(this.stateHolder.getState());
         } else {
             res.statusCode = 500;
