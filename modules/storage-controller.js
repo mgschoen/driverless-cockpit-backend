@@ -3,62 +3,67 @@ const Loki = require('lokijs');
 
 function StorageController () {
 
-    this.cache = new Loki('./db.json', { verbose: true }).addCollection('timeframes');
-    this.dbClient = null;
-    this.db = null;
-    this.timeframeCollection = null;
-    this.clipCollection = null;
-    this.initialised = false;
-    this.lastFramePersisted = 0;
-    this.countUnpersistedFrames = 0;
-    this.timeoutSinceLastDump = null;
+    let cache = new Loki('./db.json', { verbose: true }).addCollection('timeframes');
+        cache.setTTL(30000, 1000);      // Expiration time for cache documents and check interval
+    let dbClient = null;
+    let db = null;
+    let timeframeCollection = null;
+    let clipCollection = null;
+    let initialised = false;
+    let lastFramePersisted = 0;
+    let countUnpersistedFrames = 0;
+    let timeoutSinceLastDump = null;
 
     MongoClient.connect('mongodb://localhost:27017', (err, client) => {
         if (err) { console.error(err.message); process.exit(1); }
-        this.dbClient = client;
-        this.db = client.db('driverless');
-        this.db.createCollection('timeframes', (err, tfCollection) => {
+        dbClient = client;
+        db = client.db('driverless');
+        db.createCollection('timeframes', (err, tfCollection) => {
             if (err) { console.error(err.message); process.exit(1); }
-            this.timeframeCollection = tfCollection;
-            this.db.createCollection('recordings', (err, recCollection) => {
+            timeframeCollection = tfCollection;
+            db.createCollection('recordings', (err, recCollection) => {
                 if (err) { console.error(err.message); process.exit(1); }
-                this.clipCollection = recCollection;
-                this.initialised = true;
+                clipCollection = recCollection;
+                initialised = true;
             })
         });
     });
 
     this.insert = (timestamp, frame) => {
         frame['timestamp'] = timestamp;
-        this.cache.insert(frame);
-        this.countUnpersistedFrames += 1;
-        if (!this.timeoutSinceLastDump) {
-            this.timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
+        cache.insert(frame);
+        countUnpersistedFrames += 1;
+        if (!timeoutSinceLastDump) {
+            timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
         }
-        if (this.countUnpersistedFrames >= 30) {
+        if (countUnpersistedFrames >= 30) {
             this.dumpUnpersistedFrames();
         }
     };
 
     this.dumpUnpersistedFrames = (finalDump) => {
-        if (this.initialised) {
-            clearTimeout(this.timeoutSinceLastDump);
-            let insertData =  this.cache.find({'timestamp': { '$gt': this.lastFramePersisted } });
-            insertData.forEach((doc) => {
-                delete doc.$loki;
-                delete doc.meta;
+        let cacheContent = cache.find();
+        console.log('Number of objects in Cache: ', cacheContent.length);
+        if (initialised) {
+            clearTimeout(timeoutSinceLastDump);
+            let cacheData =  cache.find({'timestamp': { '$gt': lastFramePersisted } });
+            let insertData = cacheData.map((doc) => {
+                let copy = Object.assign({}, doc);
+                delete copy.$loki;
+                delete copy.meta;
+                return copy;
             });
-            this.timeframeCollection.insertMany(insertData, (err, result) => {
+            timeframeCollection.insertMany(insertData, (err, result) => {
                 if (err) { console.error(err.message); }
                 if (finalDump) {
-                    this.timeoutSinceLastDump = null;
+                    timeoutSinceLastDump = null;
                 } else {
-                    this.timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
+                    timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
                 }
                 let newestTimestamp = insertData.map((doc) => { return doc.timestamp; })
                                                 .reduce((a,b) => { return Math.max(a,b); });
-                this.lastFramePersisted = newestTimestamp;
-                this.countUnpersistedFrames = 0;
+                lastFramePersisted = newestTimestamp;
+                countUnpersistedFrames = 0;
                 console.log('Dumped '+insertData.length+' timeframes and reset timeout');
             });
         } else {

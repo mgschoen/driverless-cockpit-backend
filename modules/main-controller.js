@@ -4,8 +4,8 @@ const VehicleConnector = require('./vehicle-connector.js');
 function MainController () {
 
     // Private
-    var storage = new StorageController();
-    var vehicleConnector = new VehicleConnector(this);
+    let storage = new StorageController();
+    let vehicleConnector = new VehicleConnector(this);
 
     // Public
     this.state = {
