@@ -3,17 +3,13 @@ const express = require('express');
 const path = require('path');
 
 // Load modules
-const middleware = require('./modules/middleware');
-const vehicleConnector = require('./modules/vehicle-connector');
-const distributor = require('./modules/distributor');
-const StorageController = require('./modules/storage-controller');
+const Middleware = require('./modules/middleware');
+const MainController = require('./modules/main-controller');
 
 // Module instances
 const app = express();
-const storage = new StorageController();
-const dist = new distributor(storage);
-const API = new middleware(dist, storage);
-const vehicle = new vehicleConnector(dist);
+const mainController = new MainController();
+const API = new Middleware(mainController);
 
 // Static server
 app.use('/', express.static(path.join(__dirname, 'static')));

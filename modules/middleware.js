@@ -1,17 +1,14 @@
-function Middleware (distributorInstance, storageControllerInstance) {
+function Middleware (mainControllerInstance) {
 
-    this.stateHolder = require('./state-holder');
-    this.distributor = distributorInstance;
-    this.storage = storageControllerInstance;
+    this.mainController = mainControllerInstance;
 
     this.appState = (req, res) => {
-        res.json(this.stateHolder.state);
+        res.json(this.mainController.state);
     };
 
     this.startRecording = (req, res) => {
-        if (!this.stateHolder.recording) {
-            this.stateHolder.recording = true;
-            res.json(this.stateHolder.getState());
+        if (this.mainController.startRecording()) {
+            res.json(this.mainController.state);
         } else {
             res.statusCode = 500;
             res.send('Cannot start recording. Recording already active.');
@@ -19,10 +16,8 @@ function Middleware (distributorInstance, storageControllerInstance) {
     };
 
     this.stopRecording = (req, res) => {
-        if (this.stateHolder.recording) {
-            this.stateHolder.recording = false;
-            this.storage.dumpUnpersistedFrames(true);
-            res.json(this.stateHolder.getState());
+        if (this.mainController.stopRecording()) {
+            res.json(this.mainController.state);
         } else {
             res.statusCode = 500;
             res.send('Cannot stop recording. No recording active.');
@@ -30,9 +25,9 @@ function Middleware (distributorInstance, storageControllerInstance) {
     };
 
     this.liveStats = (req, res) => {
-        let chunk = this.distributor.chunk;
+        let chunk = this.mainController.chunk;
         let jsonResponse = {
-            timestamp: this.distributor.timestamp
+            timestamp: this.mainController.timestamp
         };
         for (let key in chunk) {
             jsonResponse[key] = chunk[key];
