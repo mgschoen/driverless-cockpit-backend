@@ -15,7 +15,14 @@ function StorageController () {
     let countUnpersistedFrames = 0;
     let timeoutSinceLastDump = null;
 
-    let dbQuery = func => {
+    /**
+     * Wrap a database related function around a Promise and execute it.
+     * Promise gets automatically rejected if database is not initialised.
+     * @param func - function to execute, must have `reject` and `resolve`
+     *               arguments and call them appropriately
+     * @returns {Promise}
+     */
+    let dbSecureExecute = func => {
         if (typeof func !== 'function') {
             throw new Error('func must be a function');
         }
@@ -27,7 +34,7 @@ function StorageController () {
                 console.warn(msg);
                 reject(new Error(msg));
             }
-        })
+        });
     };
 
     MongoClient.connect('mongodb://localhost:27017', (err, client) => {
@@ -46,78 +53,60 @@ function StorageController () {
     });
 
     this.createRecording = _ => {
-        return new Promise((resolve, reject) => {
-            if (initialised) {
-                let insertObject = {
-                    start: new Date().getTime(),
-                    end: null,
-                    writeActive: true };
-                clipCollection.insertOne(insertObject, (err, response) => {
-                    if (err) {
-                        console.error(err.message);
-                        reject(err);
-                    }
-                    console.log('[START RECORDING] id:', response.insertedId, ', started at:', response.ops[0].start);
-                    resolve(response.insertedId);
-                });
-            } else {
-                let msg = 'Database not initialised.';
-                console.warn(msg);
-                reject(new Error(msg));
-            }
+        return dbSecureExecute((resolve, reject) => {
+            let insertObject = {
+                start: new Date().getTime(),
+                end: null,
+                writeActive: true };
+            clipCollection.insertOne(insertObject, (err, response) => {
+                if (err) {
+                    console.error(err.message);
+                    reject(err);
+                }
+                console.log('[START RECORDING] id:', response.insertedId, ', started at:', response.ops[0].start);
+                resolve(response.insertedId);
+            });
         });
     };
 
     this.finishRecording = (id) => {
-        return new Promise((resolve, reject) => {
-            if (initialised) {
-                clipCollection.findOneAndUpdate(
-                    {_id: id},
-                    {$set: {
-                        end: new Date().getTime(),
-                        writeActive: false
-                    }},
-                    {returnOriginal: false})
-                    .then((response) => {
-                        let recording = response.value;
-                        console.log('[STOP RECORDING] id:', recording._id, ', stopped at:', recording.end);
-                        resolve(recording);
-                    }, (error) => {
-                        console.error(error.message);
-                        reject(error);
-                    });
-            } else {
-                let msg = 'Database not initialised.';
-                console.warn(msg);
-                reject(new Error(msg));
-            }
-        });
-    };
-
-    this.getRecording = (id) => {
-        return new Promise((resolve, reject) => {
-            if (initialised) {
-                let objectID = new Mongo.ObjectID(id);
-                clipCollection.findOne({_id: objectID}).then((response) => {
-                    if (response) {
-                        resolve(response);
-                    } else {
-                        reject(new Error('No recording with id '+id+' found'));
-                    }
+        return dbSecureExecute((resolve, reject) => {
+            clipCollection.findOneAndUpdate(
+                {_id: id},
+                {$set: {
+                    end: new Date().getTime(),
+                    writeActive: false
+                }},
+                {returnOriginal: false})
+                .then((response) => {
+                    let recording = response.value;
+                    console.log('[STOP RECORDING] id:', recording._id, ', stopped at:', recording.end);
+                    resolve(recording);
                 }, (error) => {
                     console.error(error.message);
                     reject(error);
                 });
-            } else {
-                let msg = 'Database not initialised.';
-                console.warn(msg);
-                reject(new Error(msg));
-            }
+        });
+    };
+
+    this.getRecording = (id) => {
+        return dbSecureExecute((resolve, reject) => {
+            let objectID = new Mongo.ObjectID(id);
+            clipCollection.findOne({_id: objectID}).then((response) => {
+                if (response) {
+                    resolve(response);
+                } else {
+                    reject(new Error('No recording with id '+id+' found'));
+                }
+            }, (error) => {
+                console.error(error.message);
+                reject(error);
+            });
         });
     };
 
     this.getRecordings = _ => {
-        return dbQuery((resolve, reject) => {
+        return dbSecureExecute((resolve, reject) => {
             clipCollection.find().toArray().then(
                 result => {
                     resolve(result);
@@ -129,24 +118,18 @@ function StorageController () {
     };
 
     this.getIntervalUncached = (from, to) => {
-        return new Promise((resolve, reject) => {
-            if (initialised) {
-                timeframeCollection.find(
-                    { '$and': [
-                        { 'timestamp': { '$gte': from } },
-                        { 'timestamp': { '$lte': to } } ]})
-                    .project({_id: 0}).sort('timestamp', 1).toArray()
-                    .then((result) => {
-                        resolve(result);
-                    }, (error) => {
-                        console.warn(error.message);
-                        reject(error.message);
-                    });
-            } else {
-                let msg = 'Database not initialised.';
-                console.warn(msg);
-                reject(msg);
-            }
+        return dbSecureExecute((resolve, reject) => {
+            timeframeCollection.find(
+                { '$and': [
+                    { 'timestamp': { '$gte': from } },
+                    { 'timestamp': { '$lte': to } } ]})
+                .project({_id: 0}).sort('timestamp', 1).toArray()
+                .then((result) => {
+                    resolve(result);
+                }, (error) => {
+                    console.warn(error.message);
+                    reject(error.message);
+                });
         });
     };
 
