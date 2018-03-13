@@ -1,33 +1,33 @@
 function Middleware (mainControllerInstance) {
 
-    this.mainController = mainControllerInstance;
+    let mainController = mainControllerInstance;
 
     this.appState = (req, res) => {
-        res.json(this.mainController.state);
+        res.json(mainController.state);
     };
 
     this.startRecording = (req, res) => {
-        if (this.mainController.startRecording()) {
-            res.json(this.mainController.state);
-        } else {
+        mainController.startRecording().then(_ => {
+            res.json(mainController.state);
+        }, (error) => {
             res.statusCode = 500;
-            res.send('Cannot start recording. Recording already active.');
-        }
+            res.send(error.message);
+        });
     };
 
     this.stopRecording = (req, res) => {
-        if (this.mainController.stopRecording()) {
-            res.json(this.mainController.state);
-        } else {
+        mainController.stopRecording().then(_ => {
+            res.json(mainController.state);
+        }, (error) => {
             res.statusCode = 500;
-            res.send('Cannot stop recording. No recording active.');
-        }
+            res.send(error.message);
+        });
     };
 
     this.liveStats = (req, res) => {
-        let chunk = this.mainController.chunk;
+        let chunk = mainController.chunk;
         let jsonResponse = {
-            timestamp: this.mainController.timestamp
+            timestamp: mainController.timestamp
         };
         for (let key in chunk) {
             jsonResponse[key] = chunk[key];

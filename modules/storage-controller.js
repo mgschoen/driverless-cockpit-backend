@@ -29,6 +29,55 @@ function StorageController () {
         });
     });
 
+    this.createRecording = _ => {
+        return new Promise((resolve, reject) => {
+            if (initialised) {
+                let insertObject = {
+                    start: new Date().getTime(),
+                    end: null,
+                    writeActive: true };
+                clipCollection.insertOne(insertObject, (err, response) => {
+                    if (err) {
+                        console.error(err.message);
+                        reject(err.message);
+                    }
+                    console.log('[START RECORDING] id:', response.insertedId, ', started at:', response.ops[0].start);
+                    resolve(response.insertedId);
+                });
+            } else {
+                let msg = 'Database not initialised.';
+                console.warn(msg);
+                reject(msg);
+            }
+        });
+    };
+
+    this.finishRecording = (id) => {
+        return new Promise((resolve, reject) => {
+            if (initialised) {
+                clipCollection.findOneAndUpdate(
+                    {_id: id},
+                    {$set: {
+                        end: new Date().getTime(),
+                        writeActive: false
+                    }},
+                    {returnOriginal: false})
+                    .then((response) => {
+                        let recording = response.value;
+                        console.log('[STOP RECORDING] id:', recording._id, ', stopped at:', recording.end);
+                        resolve(recording);
+                    }, (error) => {
+                        console.error(error.message);
+                        reject(error.message);
+                    });
+            } else {
+                let msg = 'Database not initialised.';
+                console.warn(msg);
+                reject(msg);
+            }
+        });
+    };
+
     this.insert = (timestamp, frame) => {
         frame['timestamp'] = timestamp;
         cache.insert(frame);

@@ -9,6 +9,7 @@ function MainController () {
 
     // Public
     this.state = {
+        activeRecording: null,
         connected: false,
         recording: false
     };
@@ -28,29 +29,46 @@ function MainController () {
 
     /**
      * Start recording frames to database
-     * @returns {boolean} - true if started successfully, false if recording already active
+     * @returns {Promise} - resolved when started successfully, rejected otherwise
      */
     this.startRecording = _ => {
-        if (!this.state.recording) {
-            this.state.recording = true;
-            return true;
-        } else {
-            return false;
-        }
+        return new Promise ((resolve, reject) => {
+            if (!this.state.recording) {
+                storage.createRecording().then((result) => {
+                    this.state.activeRecording = result;
+                    this.state.recording = true;
+                    resolve();
+                }, (error) => {
+                    console.warn(error);
+                    reject(error);
+                });
+            } else {
+                reject(new Error('Cannot start recording. Recording already active.'));
+            }
+        });
     };
 
     /**
      * Stop recording and finish recorded clip
-     * @returns {boolean} - true if finished successfully, false otherwise
+     * @returns {Promise} - resolved when stopped successfully, rejected otherwise
      */
     this.stopRecording = _ => {
-        if (this.state.recording) {
-            this.state.recording = false;
-            storage.dumpUnpersistedFrames(true);
-            return true;
-        } else {
-            return false;
-        }
+        return new Promise((resolve, reject) => {
+            if (this.state.recording) {
+                storage.finishRecording(this.state.activeRecording)
+                    .then((result) => {
+                        this.state.recording = false;
+                        this.state.activeRecording = null;
+                        storage.dumpUnpersistedFrames(true);
+                        resolve();
+                    }, (error) => {
+                        console.warn(error);
+                        reject(error);
+                    });
+            } else {
+                reject(new Error('Cannot stop recording. No recording active.'));
+            }
+        });
     };
 
 }
