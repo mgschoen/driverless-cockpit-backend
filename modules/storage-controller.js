@@ -1,3 +1,4 @@
+const Mongo = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const Loki = require('lokijs');
 
@@ -39,7 +40,7 @@ function StorageController () {
                 clipCollection.insertOne(insertObject, (err, response) => {
                     if (err) {
                         console.error(err.message);
-                        reject(err.message);
+                        reject(err);
                     }
                     console.log('[START RECORDING] id:', response.insertedId, ', started at:', response.ops[0].start);
                     resolve(response.insertedId);
@@ -47,7 +48,7 @@ function StorageController () {
             } else {
                 let msg = 'Database not initialised.';
                 console.warn(msg);
-                reject(msg);
+                reject(new Error(msg));
             }
         });
     };
@@ -68,6 +69,50 @@ function StorageController () {
                         resolve(recording);
                     }, (error) => {
                         console.error(error.message);
+                        reject(error);
+                    });
+            } else {
+                let msg = 'Database not initialised.';
+                console.warn(msg);
+                reject(new Error(msg));
+            }
+        });
+    };
+
+    this.getRecording = (id) => {
+        return new Promise((resolve, reject) => {
+            if (initialised) {
+                let objectID = new Mongo.ObjectID(id);
+                clipCollection.findOne({_id: objectID}).then((response) => {
+                    if (response) {
+                        resolve(response);
+                    } else {
+                        reject(new Error('No recording with id '+id+' found'));
+                    }
+                }, (error) => {
+                    console.error(error.message);
+                    reject(error);
+                });
+            } else {
+                let msg = 'Database not initialised.';
+                console.warn(msg);
+                reject(new Error(msg));
+            }
+        });
+    };
+
+    this.getIntervalUncached = (from, to) => {
+        return new Promise((resolve, reject) => {
+            if (initialised) {
+                timeframeCollection.find(
+                    { '$and': [
+                        { 'timestamp': { '$gte': from } },
+                        { 'timestamp': { '$lte': to } } ]})
+                    .project({_id: 0}).sort('timestamp', 1).toArray()
+                    .then((result) => {
+                        resolve(result);
+                    }, (error) => {
+                        console.warn(error.message);
                         reject(error.message);
                     });
             } else {

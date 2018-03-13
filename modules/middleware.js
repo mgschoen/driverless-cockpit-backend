@@ -35,18 +35,18 @@ function Middleware (mainControllerInstance) {
         res.json(jsonResponse);
     };
 
-    this.statsSince = (req, res) => {
-        let timeframe = req.params.timeframe,
-            parsedTimeframe, error;
-        parsedTimeframe = parseInt(timeframe);
-        if (isNaN(parsedTimeframe)) {
-            error = new Error('Invalid request /statssince/'+timeframe+'. Failed to parse timeframe.');
-            console.error(error.message);
-            res.status(500).send(error.message);
-        } else {
-            res.json({respond: 'with all timeframes newer than '+parsedTimeframe});
-        }
+    this.recording = (req, res) => {
+        mainController.composeClip(req.params.id).then((result) => {
+            res.json(result);
+        }, (error) => {
+            res.statusCode = 500;
+            res.send(error.message);
+        });
     };
+
+    this.recordingSince = (req, res) => {
+        res.json({respond: 'with all timeframes of '+req.params.id+' since '+req.params.timeframe});
+    }
 }
 
 module.exports = Middleware;

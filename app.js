@@ -16,10 +16,11 @@ app.use('/', express.static(path.join(__dirname, 'static')));
 
 // API routes
 app.get('/appstate', API.appState);
-app.get('/startrecording', API.startRecording);
-app.get('/stoprecording', API.stopRecording);
 app.get('/livestats', API.liveStats);
-app.get('/statssince/:timeframe', API.statsSince);
+app.get('/recording/start', API.startRecording);            // start a new recording
+app.get('/recording/since/:timeframe', API.recordingSince); // get all frames since :timeframe (active recordings only)
+app.get('/recording/stop', API.stopRecording);              // stop active recording
+app.get('/recording/:id', API.recording);                   // get a complete recording (finished recordings only)
 
 // Start listening
 app.listen(3000, () => console.log('Server listening on port 3000'));

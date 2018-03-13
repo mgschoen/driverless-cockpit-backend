@@ -71,6 +71,38 @@ function MainController () {
         });
     };
 
+    /**
+     * Combines metadata and timeframes for a specific recording to a clip dataset
+     * and returns it
+     * @param id - id of requested clip
+     * @returns {Object} - the requested clip
+     */
+    this.composeClip = (id) => {
+        return new Promise((resolve, reject) => {
+            storage.getRecording(id).then((recResponse) => {
+                if (recResponse.writeActive) {
+                    reject(new Error('Recording with id '+id+' is still active. ' +
+                        'Use GET /recording/since/:timeframe for querying active recordings.'));
+                } else {
+                    let clip = {
+                        id: id,
+                        start: recResponse.start,
+                        end: recResponse.end
+                    };
+                    storage.getIntervalUncached(recResponse.start, recResponse.end)
+                        .then((framesResponse) => {
+                            clip.frames = framesResponse;
+                            resolve(clip);
+                        }, (error) => {
+                            reject(error);
+                        });
+                }
+            }, (error) => {
+                reject(error);
+            });
+        });
+    };
+
 }
 
 module.exports = MainController;
