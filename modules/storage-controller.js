@@ -15,6 +15,21 @@ function StorageController () {
     let countUnpersistedFrames = 0;
     let timeoutSinceLastDump = null;
 
+    let dbQuery = func => {
+        if (typeof func !== 'function') {
+            throw new Error('func must be a function');
+        }
+        return new Promise((resolve, reject) => {
+            if (initialised) {
+                func(resolve, reject);
+            } else {
+                let msg = 'Database not initialised.';
+                console.warn(msg);
+                reject(new Error(msg));
+            }
+        })
+    };
+
     MongoClient.connect('mongodb://localhost:27017', (err, client) => {
         if (err) { console.error(err.message); process.exit(1); }
         dbClient = client;
@@ -98,6 +113,18 @@ function StorageController () {
                 console.warn(msg);
                 reject(new Error(msg));
             }
+        });
+    };
+
+    this.getRecordings = _ => {
+        return dbQuery((resolve, reject) => {
+            clipCollection.find().toArray().then(
+                result => {
+                    resolve(result);
+                }, error => {
+                    console.warn(error.message);
+                    reject(error);
+                });
         });
     };
 

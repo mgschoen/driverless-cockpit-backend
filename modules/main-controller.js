@@ -103,6 +103,16 @@ function MainController () {
         });
     };
 
+    this.getRecordingList = _ => {
+        return new Promise((resolve, reject) => {
+            storage.getRecordings().then(response => {
+                resolve(response);
+            }, error => {
+                reject(error);
+            });
+        });
+    };
+
 }
 
 module.exports = MainController;

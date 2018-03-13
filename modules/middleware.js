@@ -46,7 +46,16 @@ function Middleware (mainControllerInstance) {
 
     this.recordingSince = (req, res) => {
         res.json({respond: 'with all timeframes of '+req.params.id+' since '+req.params.timeframe});
-    }
+    };
+
+    this.allRecordings = (req, res) => {
+        mainController.getRecordingList().then(response => {
+            res.json(response);
+        }, error => {
+            res.statusCode = 500;
+            res.send(error.message);
+        });
+    };
 }
 
 module.exports = Middleware;
