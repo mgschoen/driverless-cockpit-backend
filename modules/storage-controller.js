@@ -4,8 +4,10 @@ const Loki = require('lokijs');
 
 function StorageController () {
 
+    this.cacheTTL = process.env.FSD_CACHE_TTL || 30000;
+
     let cache = new Loki('./db.json', { verbose: true }).addCollection('timeframes');
-        cache.setTTL(30000, 1000);      // Expiration time for cache documents and check interval
+        cache.setTTL(this.cacheTTL, 1000);      // Expiration time for cache documents and check interval
     let dbClient = null;
     let db = null;
     let timeframeCollection = null;
@@ -37,6 +39,21 @@ function StorageController () {
         });
     };
 
+    /**
+     * Project a list of loki documents to a list of documents without
+     * LokiJS metadata.
+     * @param array
+     * @returns {Array|Cursor}
+     */
+    let lokiProjection = array => {
+        return array.map(doc => {
+            let copy = Object.assign({}, doc);
+            delete copy.$loki;
+            delete copy.meta;
+            return copy;
+        });
+    };
+
     MongoClient.connect('mongodb://localhost:27017', (err, client) => {
         if (err) { console.error(err.message); process.exit(1); }
         dbClient = client;
@@ -64,7 +81,10 @@ function StorageController () {
                     reject(err);
                 }
                 console.log('[START RECORDING] id:', response.insertedId, ', started at:', response.ops[0].start);
-                resolve(response.insertedId);
+                resolve({
+                    id: response.insertedId,
+                    start: insertObject.start
+                });
             });
         });
     };
@@ -117,13 +137,47 @@ function StorageController () {
         });
     };
 
+    this.getIntervalCached = (from, to) => {
+        return dbSecureExecute((resolve, reject) => {
+            let query = {
+                '$and': [
+                    { 'timestamp': { '$gt': from } },
+                    { 'timestamp': { '$lt': to } }
+                ]};
+            let now = new Date().getTime();
+            if (now-from < this.cacheTTL-1000) {
+                // retrieve frames from cache
+                let frames = cache.find(query);
+                frames.sort((a, b) => {
+                    return a.timestamp - b.timestamp;
+                });
+                let result = lokiProjection(frames);
+                resolve(result);
+            } else {
+                // retrieve frames from db
+                timeframeCollection.find(query)
+                    .project({_id: 0})
+                    .sort('timestamp', 1)
+                    .toArray()
+                    .then((result) => {
+                        resolve(result);
+                    }, (error) => {
+                        console.warn(error.message);
+                        reject(error.message);
+                    });
+            }
+        });
+    };
+
     this.getIntervalUncached = (from, to) => {
         return dbSecureExecute((resolve, reject) => {
             timeframeCollection.find(
                 { '$and': [
                     { 'timestamp': { '$gte': from } },
                     { 'timestamp': { '$lte': to } } ]})
-                .project({_id: 0}).sort('timestamp', 1).toArray()
+                .project({_id: 0})
+                .sort('timestamp', 1)
+                .toArray()
                 .then((result) => {
                     resolve(result);
                 }, (error) => {
@@ -151,12 +205,7 @@ function StorageController () {
         if (initialised) {
             clearTimeout(timeoutSinceLastDump);
             let cacheData =  cache.find({'timestamp': { '$gt': lastFramePersisted } });
-            let insertData = cacheData.map((doc) => {
-                let copy = Object.assign({}, doc);
-                delete copy.$loki;
-                delete copy.meta;
-                return copy;
-            });
+            let insertData = lokiProjection(cacheData);
             timeframeCollection.insertMany(insertData, (err, result) => {
                 if (err) { console.error(err.message); }
                 if (finalDump) {

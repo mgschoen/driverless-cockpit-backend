@@ -35,7 +35,7 @@ function Middleware (mainControllerInstance) {
         res.json(jsonResponse);
     };
 
-    this.recording = (req, res) => {
+    this.getRecording = (req, res) => {
         mainController.composeClip(req.params.id).then((result) => {
             res.json(result);
         }, (error) => {
@@ -44,8 +44,17 @@ function Middleware (mainControllerInstance) {
         });
     };
 
-    this.recordingSince = (req, res) => {
-        res.json({respond: 'with all timeframes of '+req.params.id+' since '+req.params.timeframe});
+    this.getActiveRecording = (req, res) => {
+        console.time('recording-since-'+req.params.since);
+        mainController.composeActiveClip(req.params.since)
+            .then(result => {
+                console.timeEnd('recording-since-'+req.params.since);
+                res.json(result);
+            }, error => {
+                console.timeEnd('recording-since-'+req.params.since);
+                res.statusCode = 500;
+                res.send(error.message);
+            });
     };
 
     this.allRecordings = (req, res) => {

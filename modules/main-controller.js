@@ -55,11 +55,11 @@ function MainController () {
     this.stopRecording = _ => {
         return new Promise((resolve, reject) => {
             if (this.state.recording) {
-                storage.finishRecording(this.state.activeRecording)
+                this.state.recording = false;
+                storage.dumpUnpersistedFrames(true);
+                storage.finishRecording(this.state.activeRecording.id)
                     .then((result) => {
-                        this.state.recording = false;
                         this.state.activeRecording = null;
-                        storage.dumpUnpersistedFrames(true);
                         resolve();
                     }, (error) => {
                         console.warn(error);
@@ -73,9 +73,9 @@ function MainController () {
 
     /**
      * Combines metadata and timeframes for a specific recording to a clip dataset
-     * and returns it
+     * and returns it. Only works with finished recordings.
      * @param id - id of requested clip
-     * @returns {Object} - the requested clip
+     * @returns {Promise} - resolved with the requested clip if successful, rejected otherwise
      */
     this.composeClip = (id) => {
         return new Promise((resolve, reject) => {
@@ -103,7 +103,45 @@ function MainController () {
         });
     };
 
-    this.getRecordingList = _ => {
+    /**
+     * Returns a clip dataset similar to MainController.composeClip that contains
+     * all timeframes newer than `since`. Uses storage internal cache for high
+     * performance queries. Only works with active recording.
+     * @param since - the last timeframe that should not be included in the response
+     * @returns {Promise} - resolved with the requested clip if successful, rejected otherwise
+     */
+    this.composeActiveClip = (since) => {
+        return new Promise((resolve, reject) => {
+            if (this.state.recording) {
+                let clipStart = (!since || since <= this.state.activeRecording.start)
+                    ? this.state.activeRecording.start
+                    : since;
+                storage.getIntervalCached(clipStart, new Date().getTime())
+                    .then(response => {
+                        let clip = {
+                            id: this.state.activeRecording.id,
+                            start: this.state.activeRecording.start,
+                            chunk: {
+                                first: response[0].timestamp,
+                                last: response.slice(-1)[0].timestamp
+                            },
+                            frames: response
+                        };
+                        resolve(clip);
+                    }, error => {
+                        reject(error);
+                    });
+            } else {
+                reject(new Error('No recording active'));
+            }
+        });
+    };
+
+    /**
+     * Requests a list of all recordings and returns them in a Promise
+     * @returns {Promise}
+     */
+    this.getRecordingList = () => {
         return new Promise((resolve, reject) => {
             storage.getRecordings().then(response => {
                 resolve(response);
