@@ -20,13 +20,12 @@ Backend application for municHMotorsport's driverless monitoring tool. It acts..
 The current version of Driverless Cockpit does not support network connections to a real car. It therefore relies on previously generated mockup data that is stored in a CSV file on your local machine. The structure of the file must look like this:
 
 | timestamp [s] | steeringWheelAngle [rad] | pathMiddleLineX [m] | pathMiddleLineY [m] | vehicleX [m] | vehicleY [m] | vehicleVX [m/s] | vehicleVY [m/s] | vehicleYawrate [1/s] | frontwheelLeftAngle [rad] | frontwheelRightAngle [rad] |
-|----|------|----|-----|-----|-----|-----|-----|-----|----|----|----|
+|---------------|--------------------------|---------------------|---------------------|--------------|--------------|-----------------|-----------------|----------------------|---------------------------|----------------------------|
 | 0 | 0 | 2.0992 | -0.052198 | 0.94976 | -0.019921 | 0 | 0 | -1.45E-11 | -4.79E-08 | 5.40E-08 |
 | 0.1 | -0.67156 | 2.0993 | -0.0522 | 0.94973 | -0.019889 | -0.00028446 | 0.00041255 | 3.09E-05 | -0.25194 | -0.26369 |
-| 0.2 | -0.17308 | 2.1296 | -0.053375 | 0.97837 | -0.021429 | 0.69818 | -0.022324 | -0.0301 | -0.066667 | -0.064819 |
-| 0.3 | -0.088225 | 2.2541 | -0.058367 | 1.1025 | -0.025874 | 1.7887 | -0.028839 | -0.040342 | -0.035257 | -0.031809 |
+| 0.2 | -0.17308 | 2.1296 | -0.053375 | 0.97837 | -0.021429 | 0.69818 | -0.022324 | -0.0301 | -0.066667 | -0.064819 || 0.3 | -0.088225 | 2.2541 | -0.058367 | 1.1025 | -0.025874 | 1.7887 | -0.028839 | -0.040342 | -0.035257 | -0.031809 |
 | 0.4 | -0.0634 | 2.4972 | -0.068916 | 1.3454 | -0.034595 | 3.0327 | -0.03397 | -0.048808 | -0.026019 | -0.022221 |
-| ...|...|...|...|...|...|...|...|...|...|...|
+| ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | ... | 
 
 Download a sample file [here](http://argonn.me/share/driverless-cockpit-dummy-v2.csv).
 
