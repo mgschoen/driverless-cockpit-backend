@@ -144,6 +144,10 @@ function MainController () {
     this.getRecordingList = () => {
         return new Promise((resolve, reject) => {
             storage.getRecordings().then(response => {
+                // newest first
+                response.sort((a,b) => {
+                    return b.start - a.start;
+                });
                 resolve(response);
             }, error => {
                 reject(error);
