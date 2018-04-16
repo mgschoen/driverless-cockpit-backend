@@ -10,7 +10,7 @@ function MainController () {
     // Public
     this.state = {
         activeRecording: null,
-        connected: false,
+        connected: true, // TODO: set this to false once there is a real connection to a UDP client
         recording: false
     };
 

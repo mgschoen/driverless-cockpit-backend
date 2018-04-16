@@ -5,6 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
+    "startdev": "node app.js --cors",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Martin Schön",
@@ -12,6 +13,7 @@
   "dependencies": {
     "express": "^4.16.2",
     "lokijs": "^1.5.3",
+    "minimist": "^1.2.0",
     "mongodb": "^3.0.1",
     "n-readlines": "^0.2.8"
   }

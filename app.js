@@ -1,6 +1,7 @@
 // Libraries
 const express = require('express');
 const path = require('path');
+const minimist = require('minimist');
 
 // Load modules
 const Middleware = require('./modules/middleware');
@@ -10,6 +11,19 @@ const MainController = require('./modules/main-controller');
 const app = express();
 const mainController = new MainController();
 const API = new Middleware(mainController);
+
+// Command line arguments
+let args = minimist(process.argv.slice(2));
+
+// Enable CORS if flag was set
+if (args.cors || args.c) {
+    console.info('Enabling CORS. Warning: This feature should only be used in development environments.');
+    app.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "X-Requested-With");
+        next();
+    });
+}
 
 // Static server
 app.use('/', express.static(path.join(__dirname, 'static')));
