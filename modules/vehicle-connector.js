@@ -1,4 +1,11 @@
+const dgram = require('dgram');
+
+// Deprecated
 const VehicleMock = require('./vehicle-mock.js');
+
+// UDP server config
+const HOST = '127.0.0.1';
+const PORT = '33333';
 
 function VehicleConnector (distributorInstance) {
 
@@ -20,13 +27,33 @@ function VehicleConnector (distributorInstance) {
         this.distributor.distribute(chunk);
     };
 
-    if (process.env.FSD_MOCKDATA_PATH) {
+    this.receivedMessages = 0;
+
+    // Setup udp server
+    this.server = dgram.createSocket('udp4');
+    this.server.on('listening', () => {
+        let address = this.server.address();
+        console.log('UDP server listening on ' + address.address + ':' + address.port);
+    });
+    this.server.on('message', (payload, client) => {
+        this.receivedMessages += 1;
+        console.log('# # # Message number', this.receivedMessages);
+        let string = String.fromCharCode.apply(null, payload);
+        let array = string.split(',');
+        array.forEach((v,i) => {
+            console.log(v);
+        });
+        console.log(client);
+    });
+    this.server.bind(PORT);
+
+    /* if (process.env.FSD_MOCKDATA_PATH) {
         this.vehicle = new VehicleMock(process.env.FSD_MOCKDATA_PATH);
         this.vehicle.on('chunk', this.broadcastChunk);
     } else {
         throw new Error('Please specify source path to vehicle mock data in ' +
             'FSD_MOCKDATA_PATH environment variable');
-    }
+    }*/
 
 }
 

@@ -38,4 +38,4 @@ app.get('/recording/:id', API.getRecording);                 // get a complete r
 app.get('/recordings', API.allRecordings);                   // get a list of all recordings
 
 // Start listening
-app.listen(3000, () => console.log('Server listening on port 3000'));
+app.listen(3000, () => console.log('HTTP server listening on port 3000'));
