@@ -1,10 +1,10 @@
 const dgram = require('dgram');
+const parseMessage = require('../util/schema-validator').parseMessage;
 
 // Deprecated
 const VehicleMock = require('./vehicle-mock.js');
 
 // UDP server config
-const HOST = '127.0.0.1';
 const PORT = '33333';
 
 function VehicleConnector (distributorInstance) {
@@ -27,23 +27,23 @@ function VehicleConnector (distributorInstance) {
         this.distributor.distribute(chunk);
     };
 
-    this.receivedMessages = 0;
-
     // Setup udp server
     this.server = dgram.createSocket('udp4');
     this.server.on('listening', () => {
         let address = this.server.address();
         console.log('UDP server listening on ' + address.address + ':' + address.port);
     });
+
+
     this.server.on('message', (payload, client) => {
-        this.receivedMessages += 1;
-        console.log('# # # Message number', this.receivedMessages);
         let string = String.fromCharCode.apply(null, payload);
-        let array = string.split(',');
-        array.forEach((v,i) => {
-            console.log(v);
-        });
-        console.log(client);
+        try {
+            let array = parseMessage(string);
+            console.log(array);
+            console.log(client);
+        } catch (e) {
+            console.error(e.message);
+        }
     });
     this.server.bind(PORT);
 
