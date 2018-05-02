@@ -11,20 +11,46 @@ function VehicleConnector (distributorInstance) {
 
     this.distributor = distributorInstance;
 
-    this.broadcastChunk = () => {
-        let chunk = {
-            steerAngle: this.vehicle.steerAngle,
-            pathMiddleX: this.vehicle.pathMiddleX,
-            pathMiddleY: this.vehicle.pathMiddleY,
-            vehicleX: this.vehicle.vehicleX,
-            vehicleY: this.vehicle.vehicleY,
-            vehicleVelocityX: this.vehicle.vehicleVelocityX,
-            vehicleVelocityY: this.vehicle.vehicleVelocityY,
-            vehicleRotation: this.vehicle.vehicleRotation,
-            frontwheelLeftRotation: this.vehicle.frontwheelLeftRotation,
-            frontwheelRightRotation: this.vehicle.frontwheelRightRotation
-        };
-        this.distributor.distribute(chunk);
+    this.state = {
+        vehicleX: 0,
+        vehicleY: 0,
+        vehicleRotation: 0,
+        steerAngle: 0,
+        pathMiddleX: 0,
+        pathMiddleY: 0,
+        vehicleVelocityX: 0,
+        vehicleVelocityY: 0,
+        frontwheelLeftRotation: 0,
+        frontwheelRightRotation: 0,
+        observations: [],
+        clusters: [],
+        other: {}
+    };
+
+    this.updateState = message => {
+        switch (message.schema) {
+            case 'CLARA':
+                this.state.vehicleX = message.content.vehicle.x;
+                this.state.vehicleY = message.content.vehicle.y;
+                this.state.vehicleRotation = message.content.vehicle.yaw;
+                this.state.observations = message.content.observations;
+                this.state.clusters = message.content.clusters;
+                break;
+            case 'TRAJECTORY':
+                this.state.steerAngle = message.content.vehicle.steerAngle;
+                this.state.pathMiddleX = message.content.vehicle.pathMiddleX;
+                this.state.pathMiddleY = message.content.vehicle.pathMiddleY;
+                this.state.vehicleVelocityX = message.content.vehicle.vehicleVelocityX;
+                this.state.vehicleVelocityY = message.content.vehicle.vehicleVelocityY;
+                this.state.frontwheelLeftRotation = message.content.vehicle.frontwheelLeftRotation;
+                this.state.frontwheelRightRotation = message.content.vehicle.frontwheelRightRotation;
+                break;
+            default:
+                this.state.other = {...this.state.other, ...message.content};
+        }
+        // shallow copying the state to make sure a new reference is passed
+        // to the storage each time (it will reject storing otherwise)
+        this.distributor.distribute({...this.state});
     };
 
     // Setup udp server
@@ -34,26 +60,17 @@ function VehicleConnector (distributorInstance) {
         console.log('UDP server listening on ' + address.address + ':' + address.port);
     });
 
-
+    // Listen for messages
     this.server.on('message', (payload, client) => {
         let string = String.fromCharCode.apply(null, payload);
         try {
-            let array = parseMessage(string);
-            console.log(array);
-            console.log(client);
+            let message = parseMessage(string);
+            this.updateState(message);
         } catch (e) {
             console.error(e.message);
         }
     });
     this.server.bind(PORT);
-
-    /* if (process.env.FSD_MOCKDATA_PATH) {
-        this.vehicle = new VehicleMock(process.env.FSD_MOCKDATA_PATH);
-        this.vehicle.on('chunk', this.broadcastChunk);
-    } else {
-        throw new Error('Please specify source path to vehicle mock data in ' +
-            'FSD_MOCKDATA_PATH environment variable');
-    }*/
 
 }
 

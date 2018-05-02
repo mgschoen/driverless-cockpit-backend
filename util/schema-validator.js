@@ -1,5 +1,4 @@
-const atomicDataTypes = ['number', 'string', 'boolean'];
-const schemaDefintions = {
+const schemaDefinitions = {
   TRAJECTORY: [
     {
       blockName: 'vehicle',
@@ -8,8 +7,8 @@ const schemaDefintions = {
         {name: 'steerAngle', 'type': 'number'},
         {name: 'pathMiddleX', 'type': 'number'},
         {name: 'pathMiddleY', 'type': 'number'},
-        {name: 'velocityX', 'type': 'number'},
-        {name: 'velocityY', 'type': 'number'},
+        {name: 'vehicleVelocityX', 'type': 'number'},
+        {name: 'vehicleVelocityY', 'type': 'number'},
         {name: 'frontwheelLeftRotation', 'type': 'number'},
         {name: 'frontwheelRightRotation', 'type': 'number'}
       ]
@@ -41,8 +40,8 @@ const schemaDefintions = {
       blockName: 'vehicle',
       type: 'object',
       members: [
-        {name: 'vehicleX', type: 'number'},
-        {name: 'vehicleY', type: 'number'},
+        {name: 'x', type: 'number'},
+        {name: 'y', type: 'number'},
         {name: 'yaw', type: 'number'}
       ]
     }
@@ -95,7 +94,7 @@ let parseObjectBlock = (message, schema) => {
 
 /*
  Example Messages:
- ACTUATORS|0,0,2.0992,-0.052198,0.94976,-0.019921,0,0,-1.45E-11,-4.79E-08,5.40E-08
+ TRAJECTORY|0,0,2.0992,-0.052198,0.94976,-0.019921,0,0,-1.45E-11,-4.79E-08,5.40E-08
  CLARA|8.21617,-2.73031;9.68998,0.554175|8.21298,-2.74674,0.45001,5.23295e-05,0.45027,1,0;9.68674,0.537771,0.45001,5.3149e-05,0.450269,1,1|0,0
  */
 
@@ -104,7 +103,8 @@ module.exports = {
   parseMessage: message => {
 
     let blocks = message.split('|');
-    let schema = schemaDefintions[blocks[0]];
+    let schemaIdentifier = blocks[0].trim();
+    let schema = schemaDefinitions[schemaIdentifier];
     if (!schema) {
       throw new Error('Schema identifier "' + blocks[0] + '" unknown');
     }
@@ -134,7 +134,10 @@ module.exports = {
       parsedMessage[currentBlockSchema.blockName] = parsedBlock;
     }
 
-    return parsedMessage;
+    return {
+      schema: schemaIdentifier,
+      content: parsedMessage
+    };
   }
 
 };

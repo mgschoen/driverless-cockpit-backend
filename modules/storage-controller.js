@@ -189,6 +189,7 @@ function StorageController () {
 
     this.insert = (timestamp, frame) => {
         frame['timestamp'] = timestamp;
+        // console.log(frame);
         cache.insert(frame);
         countUnpersistedFrames += 1;
         if (!timeoutSinceLastDump) {
