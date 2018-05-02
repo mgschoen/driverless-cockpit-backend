@@ -1,9 +1,6 @@
 const dgram = require('dgram');
 const parseMessage = require('../util/schema-validator').parseMessage;
 
-// Deprecated
-const VehicleMock = require('./vehicle-mock.js');
-
 // UDP server config
 const PORT = '33333';
 
