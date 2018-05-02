@@ -23,8 +23,9 @@ function VehicleConnector (distributorInstance) {
         clusters: [],
         other: {}
     };
+    this.connectionLossTimeout = null;
 
-    this.updateState = message => {
+    let updateState = message => {
         switch (message.schema) {
             case 'CLARA':
                 this.state.vehicleX = message.content.vehicle.x;
@@ -50,6 +51,11 @@ function VehicleConnector (distributorInstance) {
         this.distributor.distribute({...this.state});
     };
 
+    let connectionLost = _ => {
+        this.distributor.state.connected = false;
+        this.connectionLossTimeout = null;
+    }
+
     // Setup udp server
     this.server = dgram.createSocket('udp4');
     this.server.on('listening', () => {
@@ -59,16 +65,19 @@ function VehicleConnector (distributorInstance) {
 
     // Listen for messages
     this.server.on('message', (payload, client) => {
+        clearTimeout(this.connectionLossTimeout);
+        this.distributor.state.connected = true;
         let string = String.fromCharCode.apply(null, payload);
         try {
             let message = parseMessage(string);
-            this.updateState(message);
+            updateState(message);
+            // if we don't receive anything for 3 seconds we assume connection is lost
+            this.connectionLossTimeout = setTimeout(connectionLost, 3000);
         } catch (e) {
             console.error(e.message);
         }
     });
     this.server.bind(PORT);
-
 }
 
 module.exports = VehicleConnector;
