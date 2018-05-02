@@ -14,6 +14,8 @@ function MainController () {
         recording: false
     };
 
+    this.chunk = {timestamp: 0, ...vehicleConnector.state};
+
     this.distribute = (chunk) => {
         let timestamp = new Date().getTime();
         this.timestamp = timestamp;
