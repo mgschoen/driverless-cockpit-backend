@@ -31,6 +31,7 @@ app.use('/', express.static(path.join(__dirname, 'static')));
 // API routes
 app.get('/appstate', API.appState);
 app.get('/livestats', API.liveStats);
+app.get('/resetstats', API.resetStats);
 app.get('/recording/start', API.startRecording);             // start a new recording
 app.get('/recording/active/:since', API.getActiveRecording); // get all frames newer than :since (active recordings only)
 app.get('/recording/stop', API.stopRecording);               // stop active recording

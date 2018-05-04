@@ -29,6 +29,10 @@ function MainController () {
         }
     };
 
+    this.resetStats = _ => {
+        vehicleConnector.resetStats();
+    }
+
     /**
      * Start recording frames to database
      * @returns {Promise} - resolved when started successfully, rejected otherwise

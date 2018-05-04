@@ -1,5 +1,6 @@
 const dgram = require('dgram');
 const parseMessage = require('../util/schema-validator').parseMessage;
+const updateClusterList = require('../util/cluster-updater').updateClusterList;
 
 // UDP server config
 const PORT = '33333';
@@ -20,10 +21,28 @@ function VehicleConnector (distributorInstance) {
         frontwheelLeftRotation: 0,
         frontwheelRightRotation: 0,
         observations: [],
-        clusters: [],
+        clusters: {},
         other: {}
     };
     this.connectionLossTimeout = null;
+
+    this.resetStats = _ => {
+        this.state = {
+            vehicleX: 0,
+            vehicleY: 0,
+            vehicleRotation: 0,
+            steerAngle: 0,
+            pathMiddleX: 0,
+            pathMiddleY: 0,
+            vehicleVelocityX: 0,
+            vehicleVelocityY: 0,
+            frontwheelLeftRotation: 0,
+            frontwheelRightRotation: 0,
+            observations: [],
+            clusters: {},
+            other: {}
+        };
+    };
 
     let updateState = message => {
         switch (message.schema) {
@@ -32,7 +51,7 @@ function VehicleConnector (distributorInstance) {
                 this.state.vehicleY = message.content.vehicle.y;
                 this.state.vehicleRotation = message.content.vehicle.yaw;
                 this.state.observations = message.content.observations;
-                this.state.clusters = message.content.clusters;
+                this.state.clusters = updateClusterList(this.state.clusters, message.content.clusters);
                 break;
             case 'TRAJECTORY':
                 this.state.steerAngle = message.content.vehicle.steerAngle;

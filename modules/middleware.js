@@ -35,6 +35,12 @@ function Middleware (mainControllerInstance) {
         res.json(jsonResponse);
     };
 
+    this.resetStats = (req, res) => {
+        console.log('Resetting stats');
+        mainController.resetStats();
+        res.send('Success')
+    };
+
     this.getRecording = (req, res) => {
         mainController.composeClip(req.params.id).then((result) => {
             res.json(result);
