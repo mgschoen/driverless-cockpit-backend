@@ -13,9 +13,10 @@ function StorageController () {
     let timeframeCollection = null;
     let clipCollection = null;
     let initialised = false;
-    let lastFramePersisted = 0;
-    let countUnpersistedFrames = 0;
+    let lastFrameInDump = 0;
+    let countUndumpedFrames = 0;
     let timeoutSinceLastDump = null;
+    let dumps = {};
 
     /**
      * Wrap a database related function around a Promise and execute it.
@@ -176,6 +177,10 @@ function StorageController () {
                     { 'timestamp': { '$gte': from } },
                     { 'timestamp': { '$lte': to } } ]})
                 .project({_id: 0})
+
+                // TODO This sort exceeds our RAM limits on large collections. See if we can fix it this
+                //      by making `timestamp` an index (https://docs.mongodb.com/manual/indexes/)
+                //      (I can not imagine we want our timeframes sorted any other way than by timestamps)
                 .sort('timestamp', 1)
                 .toArray()
                 .then((result) => {
@@ -191,11 +196,15 @@ function StorageController () {
         frame['timestamp'] = timestamp;
         // console.log(frame);
         cache.insert(frame);
-        countUnpersistedFrames += 1;
+        countUndumpedFrames += 1;
         if (!timeoutSinceLastDump) {
             timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
         }
-        if (countUnpersistedFrames >= 30) {
+        // TODO This method gets called EVERY time there are more than 30 unpersisted frames!
+        //      Imagine we're receiving new frames every 30 ms, but one dump takes 300 ms.
+        //      By this time this method got called 10 times, with each dump containing
+        //      the first 30 unpersisted frames. This is producing insane nonsense.
+        if (countUndumpedFrames >= 30) {
             this.dumpUnpersistedFrames();
         }
     };
@@ -205,8 +214,22 @@ function StorageController () {
         console.log('Number of objects in Cache: ', cacheContent.length);
         if (initialised) {
             clearTimeout(timeoutSinceLastDump);
-            let cacheData =  cache.find({'timestamp': { '$gt': lastFramePersisted } });
+            let cacheData =  cache.find({'timestamp': { '$gt': lastFrameInDump } });
             let insertData = lokiProjection(cacheData);
+            let dumpID = new Date().getTime();
+            let timestamps = insertData.map((doc) => { return doc.timestamp; });
+            let newestTimestamp = timestamps.reduce((a,b) => { return Math.max(a,b); });
+            let oldestTimestamp = timestamps.reduce((a,b) => { return Math.min(a,b); });
+            dumps[dumpID] = {
+                first: oldestTimestamp,
+                last: newestTimestamp,
+                data: insertData
+            };
+            lastFrameInDump = newestTimestamp;
+            countUndumpedFrames = 0;
+
+            // TODO This insert seems to take veeery long. Verify this. And see how we can fix it.
+            //      Maybe by only storing cluster delta instead of all the clusters in every frame.
             timeframeCollection.insertMany(insertData, (err, result) => {
                 if (err) { console.error(err.message); }
                 if (finalDump) {
@@ -214,10 +237,7 @@ function StorageController () {
                 } else {
                     timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
                 }
-                let newestTimestamp = insertData.map((doc) => { return doc.timestamp; })
-                                                .reduce((a,b) => { return Math.max(a,b); });
-                lastFramePersisted = newestTimestamp;
-                countUnpersistedFrames = 0;
+                delete dumps[dumpID];
                 console.log('Dumped '+insertData.length+' timeframes and reset timeout');
             });
         } else {
