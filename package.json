@@ -15,6 +15,7 @@
     "lokijs": "^1.5.3",
     "minimist": "^1.2.0",
     "mongodb": "^3.0.1",
-    "n-readlines": "^0.2.8"
+    "n-readlines": "^0.2.8",
+    "numericjs": "^1.2.6"
   }
 }
