@@ -55,18 +55,34 @@ function StorageController () {
         });
     };
 
+    let createCollection = collectionName => {
+        return new Promise((resolve, reject) => {
+            db.createCollection(collectionName).then(result => {
+                resolve(result);
+            }, err => {
+                console.error(err.message);
+                process.exit(1);
+                reject();
+            });
+        });
+    }
+
     MongoClient.connect('mongodb://localhost:27017', (err, client) => {
         if (err) { console.error(err.message); process.exit(1); }
         dbClient = client;
         db = client.db('driverless');
-        db.createCollection('timeframes', (err, tfCollection) => {
-            if (err) { console.error(err.message); process.exit(1); }
+        createCollection('timeframes').then(tfCollection => {
             timeframeCollection = tfCollection;
-            db.createCollection('recordings', (err, recCollection) => {
-                if (err) { console.error(err.message); process.exit(1); }
-                clipCollection = recCollection;
-                initialised = true;
-            })
+            timeframeCollection.ensureIndex({'timestamp': 1}).then(result => {
+                console.log(result);
+                createCollection('recordings').then(recCollection => {
+                    clipCollection = recCollection;
+                    initialised = true;
+                });
+            }, err => {
+                console.error(err.message);
+                process.exit(1);
+            });
         });
     });
 
@@ -200,10 +216,6 @@ function StorageController () {
         if (!timeoutSinceLastDump) {
             timeoutSinceLastDump = setTimeout(this.dumpUnpersistedFrames.bind(this), 20000);
         }
-        // TODO This method gets called EVERY time there are more than 30 unpersisted frames!
-        //      Imagine we're receiving new frames every 30 ms, but one dump takes 300 ms.
-        //      By this time this method got called 10 times, with each dump containing
-        //      the first 30 unpersisted frames. This is producing insane nonsense.
         if (countUndumpedFrames >= 30) {
             this.dumpUnpersistedFrames();
         }
