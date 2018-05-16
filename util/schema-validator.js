@@ -1,5 +1,5 @@
 const schemaDefinitions = {
-  TRAJECTORY: [
+  ACTUATORS: [
     {
       blockName: 'vehicle',
       type: 'object',
@@ -44,6 +44,25 @@ const schemaDefinitions = {
         {name: 'y', type: 'number'},
         {name: 'yaw', type: 'number'}
       ]
+    }
+  ],
+  TRAJECTORY: [
+    {
+      blockName: 'primitives',
+      type: 'array',
+      members: [
+        {name: 'x', type: 'number'},
+        {name: 'y', type: 'number'}
+      ]
+    },
+    {
+      blockName: 'trajectory',
+      type: 'array',
+      members: [
+        {name: 'x', type: 'number'},
+        {name: 'y', type: 'number'}
+      ]
+
     }
   ]
 };

@@ -74,7 +74,6 @@ function StorageController () {
         createCollection('timeframes').then(tfCollection => {
             timeframeCollection = tfCollection;
             timeframeCollection.ensureIndex({'timestamp': 1}).then(result => {
-                console.log(result);
                 createCollection('recordings').then(recCollection => {
                     clipCollection = recCollection;
                     initialised = true;

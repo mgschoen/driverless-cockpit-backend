@@ -1,6 +1,6 @@
 const dgram = require('dgram');
-const parseMessage = require('../util/schema-validator').parseMessage;
-const updateClusterList = require('../util/cluster-updater').updateClusterList;
+const { parseMessage } = require('../util/schema-validator');
+const { updateClusterList, updateTrajectory } = require('../util/list-updater');
 
 // UDP server config
 const PORT = '33333';
@@ -22,6 +22,9 @@ function VehicleConnector (distributorInstance) {
         frontwheelRightRotation: 0,
         observations: [],
         clusters: {},
+        trajectory: [],
+        trajectoryHash: 0,
+        trajectoryPrimitives: [],
         other: {}
     };
     this.connectionLossTimeout = null;
@@ -40,8 +43,12 @@ function VehicleConnector (distributorInstance) {
             frontwheelRightRotation: 0,
             observations: [],
             clusters: {},
+            trajectory: [],
+            trajectoryHash: 0,
+            trajectoryPrimitives: [],
             other: {}
         };
+      this.distributor.distribute({...this.state});
     };
 
     let updateState = message => {
@@ -53,7 +60,7 @@ function VehicleConnector (distributorInstance) {
                 this.state.observations = message.content.observations;
                 this.state.clusters = updateClusterList(this.state.clusters, message.content.clusters);
                 break;
-            case 'TRAJECTORY':
+            case 'ACTUATORS':
                 this.state.steerAngle = message.content.vehicle.steerAngle;
                 this.state.pathMiddleX = message.content.vehicle.pathMiddleX;
                 this.state.pathMiddleY = message.content.vehicle.pathMiddleY;
@@ -61,6 +68,12 @@ function VehicleConnector (distributorInstance) {
                 this.state.vehicleVelocityY = message.content.vehicle.vehicleVelocityY;
                 this.state.frontwheelLeftRotation = message.content.vehicle.frontwheelLeftRotation;
                 this.state.frontwheelRightRotation = message.content.vehicle.frontwheelRightRotation;
+                break;
+          case 'TRAJECTORY':
+                let update = updateTrajectory(this.state.trajectory, message.content.trajectory);
+                this.state.trajectory = update.points;
+                this.state.trajectoryHash = update.hash;
+                this.state.trajectoryPrimitives = message.content.primitives;
                 break;
             default:
                 this.state.other = {...this.state.other, ...message.content};

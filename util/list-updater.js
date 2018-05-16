@@ -1,17 +1,5 @@
 const numeric = require('numericjs');
-
-function hash (string) {
-  let hash = 0;
-  if (string.length == 0) {
-    return hash;
-  }
-  for (let i = 0; i < string.length; i++) {
-    let char = string.charCodeAt(i);
-    hash = ((hash<<5)-hash)+char;
-    hash = hash & hash; // Convert to 32bit integer
-  }
-  return hash;
-}
+const { hash } = require('./util');
 
 module.exports = {
   updateClusterList: (oldClusters, delta) => {
@@ -36,5 +24,22 @@ module.exports = {
       newClusters[id] = deltaObject[id];
     }
     return newClusters;
+  },
+
+  updateTrajectory: (oldPoints, additionalPointsXY) => {
+    let additionalPoints = [];
+    for (let addPoint of additionalPointsXY) {
+      additionalPoints.push(addPoint.x);
+      additionalPoints.push(addPoint.y);
+    }
+    let newPoints = [...oldPoints, ...additionalPoints];
+    let hashString = '';
+    for (let coord of newPoints) {
+      hashString += coord;
+    }
+    return {
+      hash: hash(hashString),
+      points: newPoints
+    };
   }
 }
