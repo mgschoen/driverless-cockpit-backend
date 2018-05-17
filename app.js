@@ -25,6 +25,11 @@ if (args.cors || args.c) {
     });
 }
 
+if (args.pres || args.p) {
+    console.info('Starting in presentation mode. Certain actions in frontend might require authentication.')
+    mainController.state.presentationMode = true
+}
+
 // Static server
 app.use('/', express.static(path.join(__dirname, 'static')));
 

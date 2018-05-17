@@ -11,7 +11,8 @@ function MainController () {
     this.state = {
         activeRecording: null,
         connected: false,
-        recording: false
+        recording: false,
+        presentationMode: false
     };
 
     this.chunk = {timestamp: 0, ...vehicleConnector.state};
