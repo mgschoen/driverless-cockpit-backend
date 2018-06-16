@@ -1,19 +1,4 @@
 const schemaDefinitions = {
-  ACTUATORS: [
-    {
-      blockName: 'vehicle',
-      type: 'object',
-      members: [
-        {name: 'steerAngle', 'type': 'number'},
-        {name: 'pathMiddleX', 'type': 'number'},
-        {name: 'pathMiddleY', 'type': 'number'},
-        {name: 'vehicleVelocityX', 'type': 'number'},
-        {name: 'vehicleVelocityY', 'type': 'number'},
-        {name: 'frontwheelLeftRotation', 'type': 'number'},
-        {name: 'frontwheelRightRotation', 'type': 'number'}
-      ]
-    }
-  ],
   CLARA: [
     {
       blockName: 'observations',
@@ -42,7 +27,12 @@ const schemaDefinitions = {
       members: [
         {name: 'x', type: 'number'},
         {name: 'y', type: 'number'},
-        {name: 'yaw', type: 'number'}
+        {name: 'yaw', type: 'number'},
+        {name: 'vehicleVelocityX', 'type': 'number'},
+        {name: 'vehicleVelocityY', 'type': 'number'},
+        {name: 'vehicleAccelerationX', 'type': 'number'},
+        {name: 'vehicleAccelerationY', 'type': 'number'},
+        {name: 'steerAngle', 'type': 'number'}
       ]
     }
   ],

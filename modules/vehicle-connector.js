@@ -18,8 +18,8 @@ function VehicleConnector (distributorInstance) {
         pathMiddleY: 0,
         vehicleVelocityX: 0,
         vehicleVelocityY: 0,
-        frontwheelLeftRotation: 0,
-        frontwheelRightRotation: 0,
+        vehicleAccelerationX: 0,
+        vehicleAccelerationY: 0,
         observations: [],
         clusters: {},
         trajectory: [],
@@ -39,8 +39,8 @@ function VehicleConnector (distributorInstance) {
             pathMiddleY: 0,
             vehicleVelocityX: 0,
             vehicleVelocityY: 0,
-            frontwheelLeftRotation: 0,
-            frontwheelRightRotation: 0,
+            vehicleAccelerationX: 0,
+            vehicleAccelerationY: 0,
             observations: [],
             clusters: {},
             trajectory: [],
@@ -57,17 +57,13 @@ function VehicleConnector (distributorInstance) {
                 this.state.vehicleX = message.content.vehicle.x;
                 this.state.vehicleY = message.content.vehicle.y;
                 this.state.vehicleRotation = message.content.vehicle.yaw;
-                this.state.observations = message.content.observations;
-                this.state.clusters = updateClusterList(this.state.clusters, message.content.clusters);
-                break;
-            case 'ACTUATORS':
                 this.state.steerAngle = message.content.vehicle.steerAngle;
-                this.state.pathMiddleX = message.content.vehicle.pathMiddleX;
-                this.state.pathMiddleY = message.content.vehicle.pathMiddleY;
                 this.state.vehicleVelocityX = message.content.vehicle.vehicleVelocityX;
                 this.state.vehicleVelocityY = message.content.vehicle.vehicleVelocityY;
-                this.state.frontwheelLeftRotation = message.content.vehicle.frontwheelLeftRotation;
-                this.state.frontwheelRightRotation = message.content.vehicle.frontwheelRightRotation;
+                this.state.vehicleAccelerationX = message.content.vehicle.vehicleAccelerationX;
+                this.state.vehicleAccelerationY = message.content.vehicle.vehicleAccelerationY;
+                this.state.observations = message.content.observations;
+                this.state.clusters = updateClusterList(this.state.clusters, message.content.clusters);
                 break;
           case 'TRAJECTORY':
                 let update = updateTrajectory(this.state.trajectory, message.content.trajectory);
