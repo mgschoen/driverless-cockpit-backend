@@ -1,6 +1,6 @@
 {
   "name": "driverless-cockpit",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Visualisation webapp for municHMotorsport's driverless vehicle",
   "main": "app.js",
   "scripts": {
