@@ -27,6 +27,7 @@ function VehicleConnector (distributorInstance) {
         other: {}
     };
     this.connectionLossTimeout = null;
+    this.basecaseTimeout = null;
 
     /**
      * Reset all values to default
@@ -54,6 +55,16 @@ function VehicleConnector (distributorInstance) {
     };
 
     /**
+     * Encapsulating state broadcast in method in order to make sure it
+     * is always called with a shallow copied state (see comment in method)
+     */
+    let broadcastState = () => {
+        // shallow copying the state to make sure a new reference is passed
+        // to the storage each time (it will reject storing otherwise)
+        this.distributor.distribute({...this.state});
+    }
+
+    /**
      * Interpret a message parsed by ../util/schema-validator and update
      * values in the state accordingly
      * @param {object} message - message object returned from parseMessage function in schema-validator
@@ -79,22 +90,33 @@ function VehicleConnector (distributorInstance) {
                 this.state.trajectoryPrimitives = message.content.primitives;
                 break;
             case 'BASECASE':
-
+                clearTimeout(this.basecaseTimeout)
+                this.state.basecaseMiddlePoints = message.content.pathMiddlePoints;
+                this.basecaseTimeout = setTimeout(basecaseTimedOut, 5000);
+                break;
             default:
                 this.state.other = {...this.state.other, ...message.content};
         }
-        // shallow copying the state to make sure a new reference is passed
-        // to the storage each time (it will reject storing otherwise)
-        this.distributor.distribute({...this.state});
+        broadcastState();
     };
 
     /**
      * Callback for loss of connection with vehicle
-     * @param _
      */
-    let connectionLost = _ => {
+    let connectionLost = () => {
         this.distributor.state.connected = false;
         this.connectionLossTimeout = null;
+    }
+
+    /**
+     * Callback fired when no new basecase data is received for a certain amount of time.
+     * Reset basecase data in state and remove timeout.
+     */
+    let basecaseTimedOut = () => {
+        console.log('basecase timed out');
+        this.state.basecaseMiddlePoints = [];
+        this.basecaseTimeout = null;
+        broadcastState();
     }
 
     // Setup udp server
