@@ -14,8 +14,6 @@ function VehicleConnector (distributorInstance) {
         vehicleY: 0,
         vehicleRotation: 0,
         steerAngle: 0,
-        pathMiddleX: 0,
-        pathMiddleY: 0,
         vehicleVelocityX: 0,
         vehicleVelocityY: 0,
         vehicleAccelerationX: 0,
@@ -25,18 +23,21 @@ function VehicleConnector (distributorInstance) {
         trajectory: [],
         trajectoryHash: 0,
         trajectoryPrimitives: [],
+        basecaseMiddlePoints: [],
         other: {}
     };
     this.connectionLossTimeout = null;
 
+    /**
+     * Reset all values to default
+     * @param _
+     */
     this.resetStats = _ => {
         this.state = {
             vehicleX: 0,
             vehicleY: 0,
             vehicleRotation: 0,
             steerAngle: 0,
-            pathMiddleX: 0,
-            pathMiddleY: 0,
             vehicleVelocityX: 0,
             vehicleVelocityY: 0,
             vehicleAccelerationX: 0,
@@ -46,11 +47,17 @@ function VehicleConnector (distributorInstance) {
             trajectory: [],
             trajectoryHash: 0,
             trajectoryPrimitives: [],
+            basecaseMiddlePoints: [],
             other: {}
         };
       this.distributor.distribute({...this.state});
     };
 
+    /**
+     * Interpret a message parsed by ../util/schema-validator and update
+     * values in the state accordingly
+     * @param {object} message - message object returned from parseMessage function in schema-validator
+     */
     let updateState = message => {
         switch (message.schema) {
             case 'CLARA':
@@ -65,12 +72,14 @@ function VehicleConnector (distributorInstance) {
                 this.state.observations = message.content.observations;
                 this.state.clusters = updateClusterList(this.state.clusters, message.content.clusters);
                 break;
-          case 'TRAJECTORY':
+            case 'TRAJECTORY':
                 let update = updateTrajectory(this.state.trajectory, message.content.trajectory);
                 this.state.trajectory = update.points;
                 this.state.trajectoryHash = update.hash;
                 this.state.trajectoryPrimitives = message.content.primitives;
                 break;
+            case 'BASECASE':
+
             default:
                 this.state.other = {...this.state.other, ...message.content};
         }
@@ -79,6 +88,10 @@ function VehicleConnector (distributorInstance) {
         this.distributor.distribute({...this.state});
     };
 
+    /**
+     * Callback for loss of connection with vehicle
+     * @param _
+     */
     let connectionLost = _ => {
         this.distributor.state.connected = false;
         this.connectionLossTimeout = null;

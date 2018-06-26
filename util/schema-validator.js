@@ -54,9 +54,25 @@ const schemaDefinitions = {
       ]
 
     }
+  ],
+  BASECASE: [
+    {
+      blockName: 'pathMiddlePoints',
+      type: 'array',
+      members: [
+        {name: 'x', type: 'number'},
+        {name: 'y', type: 'number'}
+      ]
+    }
   ]
 };
 
+/**
+ * Process a message block that was defined as array
+ * @param {string} message - raw content of the block, excluding surrounding '|' characters
+ * @param {object} schema - block schema from message schema defined in `schemaDefinitions`
+ * @returns {Array} - parsed block as a JavaScript array
+ */
 let parseArrayBlock = (message, schema) => {
   let arrayItems = message.split(';')
       .map(item => item.trim())
@@ -70,6 +86,12 @@ let parseArrayBlock = (message, schema) => {
   return parsedBlock;
 };
 
+/**
+ * Process a message block that was defined as object
+ * @param {string} message - raw content of the block, excluding surrounding '|' characters
+ * @param {object} schema - block schema from message schema defined in `schemaDefinitions`
+ * @returns {object} - parsed block as a JavaScript object literal
+ */
 let parseObjectBlock = (message, schema) => {
   let fields = message.split(',')
       .map(field => field.trim())
@@ -108,45 +130,51 @@ let parseObjectBlock = (message, schema) => {
  */
 
 module.exports = {
+    /**
+     * Validate a raw vehicle message and convert it into a JavaScript object literal
+     * in case it is valid
+     * @param {string} message - string starting with a schema identifier (e.g. 'CLARA', 'TRAJECTORY'), followed by
+     *                           a number of blocks separated by '|' characters
+     * @returns {{schema: string, content}}
+     */
+    parseMessage: message => {
 
-  parseMessage: message => {
+        let blocks = message.split('|');
+        let schemaIdentifier = blocks[0].trim();
+        let schema = schemaDefinitions[schemaIdentifier];
+        if (!schema) {
+            throw new Error('Schema identifier "' + blocks[0] + '" unknown');
+        }
 
-    let blocks = message.split('|');
-    let schemaIdentifier = blocks[0].trim();
-    let schema = schemaDefinitions[schemaIdentifier];
-    if (!schema) {
-      throw new Error('Schema identifier "' + blocks[0] + '" unknown');
+        let messageContentBlocks = blocks.slice(1);
+        let numBlocks = messageContentBlocks.length;
+        if (numBlocks !== schema.length) {
+            throw new Error('Message does not correspond to schema: Expected ' + schema.length
+                + ' blocks but found ' + messageContentBlocks.length);
+        }
+
+        let parsedMessage = {};
+        for (let i = 0; i < numBlocks; i++) {
+            let currentBlock = messageContentBlocks[i];
+            let currentBlockSchema = schema[i];
+            let parsedBlock;
+            switch (currentBlockSchema.type) {
+                case 'array':
+                    parsedBlock = parseArrayBlock(currentBlock, currentBlockSchema);
+                    break;
+                case 'object':
+                    parsedBlock = parseObjectBlock(currentBlock, currentBlockSchema);
+                    break;
+                default:
+                    throw new Error('Schema invalid: Unknown block type "' + currentBlockSchema.type + '"');
+            }
+            parsedMessage[currentBlockSchema.blockName] = parsedBlock;
+        }
+
+        return {
+            schema: schemaIdentifier,
+            content: parsedMessage
+        };
     }
-
-    let messageContentBlocks = blocks.slice(1);
-    let numBlocks = messageContentBlocks.length;
-    if (numBlocks !== schema.length) {
-      throw new Error('Message does not correspond to schema: Expected ' + schema.length
-          + ' blocks but found ' + messageContentBlocks.length);
-    }
-
-    let parsedMessage = {};
-    for (let i = 0; i < numBlocks; i++) {
-      let currentBlock = messageContentBlocks[i];
-      let currentBlockSchema = schema[i];
-      let parsedBlock;
-      switch (currentBlockSchema.type) {
-        case 'array':
-          parsedBlock = parseArrayBlock(currentBlock, currentBlockSchema);
-          break;
-        case 'object':
-          parsedBlock = parseObjectBlock(currentBlock, currentBlockSchema);
-          break;
-        default:
-          throw new Error('Schema invalid: Unknown block type "' + currentBlockSchema.type + '"');
-      }
-      parsedMessage[currentBlockSchema.blockName] = parsedBlock;
-    }
-
-    return {
-      schema: schemaIdentifier,
-      content: parsedMessage
-    };
-  }
 
 };
